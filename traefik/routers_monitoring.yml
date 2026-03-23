@@ -1,0 +1,114 @@
+# ==============================================================================
+# ROUTERS_MONITORING - TRAEFIK MONITORING ROUTING
+# ==============================================================================
+# Description: HTTP routing rules for monitoring and observability services
+# Author: Matt Barham
+# Created: 2026-02-12
+# Version: 1.0.0
+# ==============================================================================
+# Deployed by Spoke as: mod_monitoring_routers_monitoring.yml
+# Dependencies:
+#   - mod_monitoring_services_monitoring.yml (service definitions)
+#   - hub middlewares (middleware chains)
+#   - Environment variable: DOMAIN
+# ==============================================================================
+
+http:
+  routers:
+    #======================================================
+    #==================== GRAFANA ========================
+    #======================================================
+
+    grafana-metrics:
+      rule: Host(`graf.{{ env "DOMAIN" }}`) && PathPrefix(`/metrics`)
+      entryPoints: "websecure"
+      priority: 500
+      middlewares: chain-monitoring@file
+      service: grafana-svc@file
+
+    grafana-api:
+      rule: Host(`graf.{{ env "DOMAIN" }}`) && PathPrefix(`/api/public`)
+      entryPoints: "websecure"
+      priority: 450
+      middlewares: chain-api@file
+      service: grafana-svc@file
+
+    grafana-public-dashboards:
+      rule: Host(`graf.{{ env "DOMAIN" }}`) && PathPrefix(`/public-dashboards`)
+      entryPoints: "websecure"
+      priority: 400
+      middlewares: chain-no-auth@file
+      service: grafana-svc@file
+
+    grafana-public:
+      rule: Host(`graf.{{ env "DOMAIN" }}`) && PathPrefix(`/public`)
+      entryPoints: "websecure"
+      priority: 300
+      middlewares: chain-no-auth@file
+      service: grafana-svc@file
+
+    grafana:
+      rule: Host(`graf.{{ env "DOMAIN" }}`)
+      entryPoints: "websecure"
+      priority: 100
+      middlewares: chain-authentik@file
+      service: grafana-svc@file
+
+    #======================================================
+    #==================== PROMETHEUS =====================
+    #======================================================
+
+    prometheus:
+      rule: Host(`prom.{{ env "DOMAIN" }}`)
+      entryPoints: "websecure"
+      middlewares: chain-admin-strict@file
+      priority: 100
+      service: prometheus-svc@file
+
+    prometheus-metrics:
+      rule: Host(`prom.{{ env "DOMAIN" }}`) && PathPrefix(`/metrics`)
+      priority: 300
+      middlewares: chain-monitoring@file
+      service: prometheus-svc@file
+
+    #======================================================
+    #==================== DOZZLE =========================
+    #======================================================
+
+    dozzle-soxy:
+      rule: Host(`logs.{{ env "DOMAIN" }}`)
+      entryPoints: "websecure"
+      middlewares: sablier-dozzle@file,chain-authentik@file
+      service: dozzle-soxy-svc@file
+
+    #======================================================
+    #==================== ALLOY ==========================
+    #======================================================
+
+    alloy:
+      rule: Host(`alloy.{{ env "DOMAIN" }}`)
+      entryPoints: "websecure"
+      middlewares: chain-authentik@file
+      service: alloy-svc@file
+
+    #======================================================
+    #==================== GLANCES ========================
+    #======================================================
+
+    glances:
+      rule: Host(`status.{{ env "DOMAIN" }}`)
+      entryPoints: "websecure"
+      middlewares: chain-admin-strict@file
+      service: glances-svc@file
+
+  middlewares:
+    sablier-dozzle:
+      plugin:
+        sablier:
+          sablierUrl: http://sablier:10000
+          group: dozzle
+          sessionDuration: 15m
+          dynamic:
+            displayName: Dozzle Logs
+            theme: hacker-terminal
+            refreshFrequency: 5s

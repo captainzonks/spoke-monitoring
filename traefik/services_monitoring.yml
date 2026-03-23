@@ -1,0 +1,66 @@
+# ==============================================================================
+# SERVICES_MONITORING - TRAEFIK MONITORING SERVICES
+# ==============================================================================
+# Description: Load balancer service configurations for monitoring services
+# Author: Matt Barham
+# Created: 2026-02-12
+# Version: 1.0.0
+# ==============================================================================
+# Deployed by Spoke as: mod_monitoring_services_monitoring.yml
+# Dependencies:
+#   - Container services must be running and accessible
+#   - Docker networks: troxy (defined in compose files)
+# ==============================================================================
+
+http:
+  services:
+    #======================================================
+    #==================== GRAFANA ========================
+    #======================================================
+
+    grafana-svc:
+      loadBalancer:
+        servers:
+          - url: http://grafana:3000
+        healthCheck:
+          path: /api/health
+          interval: 30s
+          timeout: 10s
+          headers:
+            Host: graf.{{ env "DOMAIN" }}
+
+    #======================================================
+    #==================== PROMETHEUS =====================
+    #======================================================
+
+    prometheus-svc:
+      loadBalancer:
+        servers:
+          - url: http://prometheus:9090
+
+    #======================================================
+    #==================== DOZZLE =========================
+    #======================================================
+
+    dozzle-soxy-svc:
+      loadBalancer:
+        servers:
+          - url: http://dozzle-soxy:8080
+
+    #======================================================
+    #==================== ALLOY ==========================
+    #======================================================
+
+    alloy-svc:
+      loadBalancer:
+        servers:
+          - url: http://alloy:12345
+
+    #======================================================
+    #==================== GLANCES ========================
+    #======================================================
+
+    glances-svc:
+      loadBalancer:
+        servers:
+          - url: http://glances:61208

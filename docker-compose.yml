@@ -1,0 +1,567 @@
+# ==============================================================================
+# SPOKE MONITORING MODULE - DOCKER COMPOSE
+# ==============================================================================
+# Description: Monitoring services - metrics, logs, visualization, alerts
+# Author: Matt Barham
+# Created: 2026-02-12
+# Version: 1.0.0
+# ==============================================================================
+# Services: grafana, prometheus, loki, telegraf, dozzle-socket, dozzle-soxy,
+#           alloy, nut-upsd
+# Networks: troxy, soxy, auxy (external, created by hub)
+# ==============================================================================
+
+name: spoke-monitoring
+
+############################ EXTENSIONS
+
+x-ssl: &ssl
+  environment:
+    - SSL_CERT_FILE=${SSL_CERT_FILE}
+    - REQUESTS_CA_BUNDLE=${REQUESTS_CA_BUNDLE}
+    - CURL_CA_BUNDLE=${CURL_CA_BUNDLE}
+
+  volumes:
+    - ${CA_CERT}:/etc/ssl/certs/ca-certificates.crt:ro
+
+x-logging-small: &log_small
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "2"
+
+############################ NETWORKS
+
+networks:
+  troxy:
+    external: true
+  soxy:
+    external: true
+  auxy:
+    external: true
+
+############################# SECRETS
+
+secrets:
+  influxdb3_auth_token:
+    file: ${SECRETS_DIR}/influxdb3/influxdb3_auth_token
+
+  grafana_admin_password:
+    file: ${SECRETS_DIR}/grafana/grafana_admin_password
+  grafana_secret_key:
+    file: ${SECRETS_DIR}/grafana/grafana_secret_key
+  grafana_oauth_client_id:
+    file: ${SECRETS_DIR}/grafana/grafana_oauth_client_id
+  grafana_oauth_client_secret:
+    file: ${SECRETS_DIR}/grafana/grafana_oauth_client_secret
+  grafana_psql_password:
+    file: ${SECRETS_DIR}/postgres/grafana_psql_password
+
+  nut_upsd_password:
+    file: ${SECRETS_DIR}/nut_upsd/nut_upsd_password
+
+############################# SERVICES
+
+services:
+  #======================================
+  # GRAFANA - Monitoring Dashboard
+  #======================================
+  grafana:
+    <<: [*ssl, *log_small]
+    image: ${GRAFANA_IMAGE}
+    hostname: grafana
+    container_name: grafana
+    restart: on-failure
+    init: true
+
+    security_opt:
+      - no-new-privileges=true
+    mem_limit: 1G
+    cpus: 1.0
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    user: ${PUID}:${DGID}
+
+    networks:
+      troxy:
+        ipv4_address: ${GRAFANA_IP}
+
+    ports:
+      - ${GRAFANA_PORT}:3000
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 3m
+
+    command:
+      - grafana
+      - server
+      - -config.expand-env=true
+      - --config /usr/share/grafana/conf/grafana.ini
+
+    environment:
+      - TZ=${TZ}
+      - DOMAIN=${DOMAIN}
+      - GF_LOG_MODE=console file
+      - GF_LOG_LEVEL=info
+      - GF_METRICS_ENABLED=true
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_admin_password
+      - GF_SECURITY_SECRET_KEY__FILE=/run/secrets/grafana_secret_key
+      - GF_DATABASE_TYPE=postgres
+      - GF_DATABASE_HOST=postgres-hub:5432
+      - GF_DATABASE_NAME=grafana_db
+      - GF_DATABASE_USER=grafana
+      - GF_DATABASE_PASSWORD__FILE=/run/secrets/grafana_psql_password
+      - GF_SERVER_ROOT_URL=${GF_SERVER_ROOT_URL}
+      - GF_SERVER_CERTS_WATCH_INTERVAL=300
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID__FILE=/run/secrets/grafana_oauth_client_id
+      - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET__FILE=/run/secrets/grafana_oauth_client_secret
+
+    volumes:
+      - ${APPDATA_DIR}/grafana/conf/grafana.ini:/etc/grafana/grafana.ini:rw
+      - ${APPDATA_DIR}/grafana/conf/provisioning/:/etc/grafana/provisioning/:rw
+      - ${APPDATA_DIR}/grafana/data/:/var/lib/grafana/:rw
+      - ${LOCALTIME}:/etc/localtime:ro
+
+    tmpfs: &tmpfs
+      - /tmp/:rw,size=200m
+      - /run/:rw,size=100m
+      - /dev/shm/:rw,size=512m
+
+    secrets:
+      - grafana_oauth_client_id
+      - grafana_oauth_client_secret
+      - grafana_admin_password
+      - grafana_secret_key
+      - grafana_psql_password
+
+  #======================================
+  # PROMETHEUS - Metrics Collection
+  #======================================
+  prometheus:
+    <<: [*ssl, *log_small]
+    image: ${PROMETHEUS_IMAGE}
+    build:
+      context: ./dockerfiles/prometheus/
+      dockerfile: ./dockerfiles/prometheus/Dockerfile
+      args:
+        BUILD_DATE: ${BUILD_DATE}
+        CT_TAG: ${PROMETHEUS_TAG}
+        USER_ID: ${PUID:-0}
+        GROUP_ID: ${DGID:-0}
+        USERNAME: prometheus
+        GROUPNAME: prometheus
+      x-bake:
+        tags:
+          - prometheus:${PROMETHEUS_TAG}
+
+    hostname: prometheus
+    container_name: prometheus
+    restart: on-failure
+    init: true
+
+    security_opt:
+      - no-new-privileges=true
+    mem_limit: 2G
+    cpus: 1.0
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    user: ${PUID}:${DGID}
+
+    networks:
+      troxy:
+        ipv4_address: ${PROMETHEUS_IP}
+
+    ports:
+      - ${PROMETHEUS_PORT}:9090
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/etc/prometheus/console_libraries
+      - --web.console.templates=/etc/prometheus/consoles
+      - --web.enable-lifecycle
+      - --web.enable-remote-write-receiver
+      - --storage.tsdb.retention.time=15d
+
+    environment:
+      - TZ=${TZ}
+
+    volumes:
+      - ${APPDATA_DIR}/prometheus/config/:/etc/prometheus/:ro
+      - ${APPDATA_DIR}/prometheus/data/:/prometheus/:rw
+      - ${LOCALTIME}:/etc/localtime:ro
+
+    tmpfs:
+      - /tmp/:rw,size=500m
+      - /run/:rw,size=100m
+      - /dev/shm/:rw,size=1g
+
+  #======================================
+  # LOKI - Log Aggregation (Monolithic Mode)
+  #======================================
+  loki:
+    <<: [*ssl, *log_small]
+    image: ${LOKI_IMAGE}
+    hostname: loki
+    container_name: loki
+    restart: on-failure
+    init: true
+
+    security_opt:
+      - no-new-privileges=true
+    read_only: true
+    mem_limit: 1G
+    cpus: 1.0
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    user: ${PUID}:${DGID}
+
+    networks:
+      troxy:
+        ipv4_address: ${LOKI_WRITE_IP}
+
+    ports:
+      - ${LOKI_WRITE_PORT}:3100
+
+    command: -config.file=/etc/loki/config.yml -target=all -config.expand-env=true
+
+    environment:
+      - TZ=${TZ}
+      - MINIO_IP=${MINIO_IP}
+      - MINIO_LOKI_ACCESS_KEY=${MINIO_LOKI_ACCESS_KEY}
+      - MINIO_LOKI_SECRET_KEY=${MINIO_LOKI_SECRET_KEY}
+      - LOKI_WRITE_IP=${LOKI_WRITE_IP}
+
+    volumes:
+      - ${APPDATA_DIR}/loki/config/:/etc/loki/:ro
+      - ${APPDATA_DIR}/loki/data/:/loki/:rw
+      - ${APPDATA_DIR}/loki/compactor/:/tmp/compactor/:rw
+      - ${LOCALTIME}:/etc/localtime:ro
+
+    tmpfs:
+      - /tmp/:rw,size=300m
+      - /run/:rw,size=100m
+      - /dev/shm/:rw,size=512m
+
+  #======================================
+  # TELEGRAF - Metrics Agent
+  #======================================
+  telegraf:
+    <<: [*ssl, *log_small]
+    image: ${TELEGRAF_IMAGE}
+    build:
+      context: ./dockerfiles/telegraf/
+      dockerfile: ./dockerfiles/telegraf/Dockerfile
+      args:
+        BUILD_DATE: ${BUILD_DATE}
+        CT_TAG: ${TELEGRAF_TAG}
+        USER_ID: ${PUID:-0}
+        GROUP_ID: ${DGID:-0}
+        USERNAME: telegraf
+        GROUPNAME: telegraf
+        OG_UID: 999
+        OG_GID: 999
+      x-bake:
+        tags:
+          - telegraf:${TELEGRAF_TAG}
+
+    hostname: telegraf
+    container_name: telegraf
+    restart: on-failure
+    init: true
+
+    security_opt:
+      - no-new-privileges=true
+    mem_limit: 512M
+    cpus: 0.5
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    user: ${PUID}:${DGID}
+
+    networks:
+      soxy:
+        ipv4_address: ${TELEGRAF_IP_S}
+      troxy:
+        ipv4_address: ${TELEGRAF_IP_T}
+
+    ports:
+      - ${TELEGRAF_PORT}:8094
+      - ${TELEGRAF_LISTEN_PORT}:9273
+
+    environment:
+      - TZ=${TZ}
+      - HOST_PROC=/hostfs/proc
+      - HOST_SYS=/hostfs/sys
+      - HOST_ETC=/hostfs/etc
+      - HOST_DEV=/hostfs/dev
+      - HOST_MOUNT_PREFIX=/hostfs
+      - INFLUXDB3_HOST=influxdb3
+      - INFLUXDB3_PORT=${INFLUXDB3_PORT}
+      - TELEGRAF_LISTEN_PORT=${TELEGRAF_LISTEN_PORT}
+
+    volumes:
+      - ${APPDATA_DIR}/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/hostfs/sys:ro
+      - /proc:/hostfs/proc:ro
+      - /etc:/hostfs/etc:ro
+      - /dev:/hostfs/dev:ro
+      - /run/udev:/hostfs/run/udev:ro
+      - ${LOCALTIME}:/etc/localtime:ro
+
+    tmpfs:
+      - /tmp/:rw,size=100m
+      - /run/:rw,size=50m
+
+    secrets:
+      - influxdb3_auth_token
+
+  #======================================
+  # DOZZLE SOCKET - Docker Log Viewer (Agent)
+  #======================================
+  dozzle-socket:
+    <<: [*ssl, *log_small]
+    image: ${DOZZLE_IMAGE}
+    hostname: dozzle-socket
+    container_name: dozzle-socket
+    restart: on-failure
+    init: true
+
+    security_opt:
+      - no-new-privileges=true
+    read_only: true
+    mem_limit: 256M
+    cpus: 0.5
+    cap_drop:
+      - ALL
+
+    networks:
+      soxy:
+        ipv4_address: ${DOZZLE_SOCK_IP}
+
+    ports:
+      - ${DOZZLE_SOCK_PORT}:8080
+
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      start_period: 20s
+      start_interval: 5s
+      retries: 5
+
+    command: agent
+
+    environment:
+      - TZ=${TZ}
+      - DOZZLE_NO_ANALYTICS=true
+      - DOCKER_HOST=tcp://${SPROXY_IP}:${SPROXY_PORT}
+      - DOZZLE_HOSTNAME=${INSTANCE_NAME}
+
+    labels:
+      - sablier.enable=true
+      - sablier.group=dozzle
+
+    volumes:
+      - ${LOCALTIME}:/etc/localtime:ro
+
+    tmpfs:
+      - /tmp/:rw,size=50m
+
+  #======================================
+  # DOZZLE SOXY - Docker Log Viewer (Web UI)
+  #======================================
+  dozzle-soxy:
+    <<: [*ssl, *log_small]
+    image: ${DOZZLE_IMAGE}
+    hostname: dozzle-soxy
+    container_name: dozzle-soxy
+    restart: on-failure
+    init: true
+
+    security_opt:
+      - no-new-privileges=true
+    read_only: true
+    mem_limit: 256M
+    cpus: 0.5
+    cap_drop:
+      - ALL
+
+    networks:
+      soxy:
+        ipv4_address: ${DOZZLE_SOXY_IP}
+
+    ports:
+      - ${DOZZLE_SOXY_PORT}:8080
+
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      start_period: 1m
+      start_interval: 10s
+      timeout: 30s
+      retries: 5
+
+    environment:
+      - TZ=${TZ}
+      - DOZZLE_NO_ANALYTICS=true
+      - DOCKER_HOST=tcp://${SPROXY_IP}:${SPROXY_PORT}
+      - DOZZLE_REMOTE_AGENT=${DOZZLE_SOCK_IP}:${DOZZLE_SOCK_PORT}
+
+    labels:
+      - sablier.enable=true
+      - sablier.group=dozzle
+
+    volumes:
+      - ${LOCALTIME}:/etc/localtime:ro
+
+    tmpfs:
+      - /tmp/:rw,size=50m
+
+  #======================================
+  # ALLOY - Log and Metrics Collection Agent
+  #======================================
+  alloy:
+    <<: [*ssl, *log_small]
+    image: ${ALLOY_IMAGE}
+    hostname: alloy
+    container_name: alloy
+    restart: on-failure
+    init: true
+
+    security_opt:
+      - no-new-privileges=true
+    read_only: true
+    mem_limit: 512M
+    cpus: 1.0
+    cap_drop:
+      - ALL
+    user: ${PUID}:${DGID}
+
+    networks:
+      soxy:
+        ipv4_address: ${ALLOY_IP_S}
+      troxy:
+        ipv4_address: ${ALLOY_IP_T}
+
+    ports:
+      - ${ALLOY_PORT}:12345
+
+    depends_on:
+      loki:
+        condition: service_started
+
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data/
+      - /etc/alloy/config.alloy
+
+    environment:
+      - TZ=${TZ}
+      - INSTANCE_NAME=${INSTANCE_NAME}
+      - DOMAIN=${DOMAIN}
+      - DOCKER_HOST=tcp://${SPROXY_IP}:${SPROXY_PORT}
+      - MINIO_LOKI_ACCESS_KEY=${MINIO_LOKI_ACCESS_KEY}
+      - MINIO_LOKI_SECRET_KEY=${MINIO_LOKI_SECRET_KEY}
+
+    volumes:
+      - /var/log/:/var/log/syslogs/:ro
+      - ${APPDATA_DIR}/alloy/config/config.alloy:/etc/alloy/config.alloy:ro
+      - ${APPDATA_DIR}/alloy/:/var/lib/alloy/:rw
+      - ${LOCALTIME}:/etc/localtime:ro
+
+    tmpfs: *tmpfs
+
+  #======================================
+  # NUT UPSD - UPS Monitoring & Management
+  #======================================
+  nut-upsd:
+    image: ${NUT_UPSD_IMAGE}
+    hostname: nut-upsd
+    container_name: nut-upsd
+    restart: on-failure
+    init: true
+
+    privileged: true
+
+    security_opt:
+      - no-new-privileges=true
+    mem_limit: 256M
+    cpus: 0.5
+
+    devices:
+      - /dev/bus/usb:/dev/bus/usb
+
+    networks:
+      troxy:
+        ipv4_address: ${NUT_IP}
+
+    ports:
+      - ${NUT_PORT}:3493
+
+    depends_on:
+      - grafana
+
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/bin/upsc ${NUT_NAME}@localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    environment:
+      - TZ=${TZ}
+      - DOMAIN=${DOMAIN}
+      - DRIVER=${NUT_DRIVER}
+      - NAME=${NUT_NAME}
+      - DESCRIPTION=${NUT_DESCRIPTION}
+      - SERIAL=${NUT_SERIAL}
+      - VENDORID=${NUT_VENDORID}
+      - PORT=${NUT_DEV_PORT}
+      - MAXAGE=15
+      - POLLINTERVAL=5
+      - API_USER=upsmon
+      - SECRETNAME=nut_upsd_password
+      - SDORDER=-1
+      - NOTIFYCMD=/opt/scripts/notify_users
+
+    volumes:
+      - ${APPDATA_DIR}/nut-upsd/var:/var/lib/nut:rw
+      - ${APPDATA_DIR}/nut-upsd/scripts:/opt/scripts:ro
+      - ${LOCALTIME}:/etc/localtime:ro
+
+    tmpfs:
+      - /tmp:rw,size=50m
+      - /run:rw,size=50m
+
+    secrets:
+      - nut_upsd_password
+
+    labels:
+      - traefik.enable=false

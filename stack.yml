@@ -1,0 +1,103 @@
+module:
+  name: monitoring
+  version: 1.0.0
+  description: "Monitoring and observability stack - metrics, logs, visualization"
+  author: "Matt Barham"
+  license: MIT
+
+requires:
+  networks:
+    - name: troxy
+      required: true
+    - name: soxy
+      required: true
+    - name: auxy
+      required: true
+  hub_services:
+    - traefik
+    - postgres-hub
+
+env:
+  hub:
+    - TZ
+    - DOMAIN
+    - SPOKE_DIR
+    - SECRETS_DIR
+    - APPDATA_DIR
+    - PUID
+    - DGID
+    - LOCALTIME
+    - INSTANCE_NAME
+    - SPROXY_IP
+    - SPROXY_PORT
+    - CA_CERT
+    - SSL_CERT_FILE
+    - REQUESTS_CA_BUNDLE
+    - CURL_CA_BUNDLE
+    - PROMETHEUS_IP
+    - PROMETHEUS_PORT
+    - MINIO_IP
+    - MINIO_LOKI_ACCESS_KEY
+    - MINIO_LOKI_SECRET_KEY
+  module:
+    - GF_SERVER_ROOT_URL
+    - GRAFANA_IMAGE
+    - GRAFANA_IP
+    - GRAFANA_PORT
+    - PROMETHEUS_IMAGE
+    - PROMETHEUS_TAG
+    - LOKI_IMAGE
+    - LOKI_WRITE_IP
+    - LOKI_WRITE_PORT
+    - TELEGRAF_IMAGE
+    - TELEGRAF_TAG
+    - TELEGRAF_IP_S
+    - TELEGRAF_IP_T
+    - TELEGRAF_PORT
+    - TELEGRAF_LISTEN_PORT
+    - DOZZLE_IMAGE
+    - DOZZLE_SOCK_IP
+    - DOZZLE_SOCK_PORT
+    - DOZZLE_SOXY_IP
+    - DOZZLE_SOXY_PORT
+    - ALLOY_IMAGE
+    - ALLOY_IP_S
+    - ALLOY_IP_T
+    - ALLOY_PORT
+    - INFLUXDB3_PORT
+    - NUT_UPSD_IMAGE
+    - NUT_IP
+    - NUT_PORT
+    - NUT_DRIVER
+    - NUT_NAME
+    - NUT_DESCRIPTION
+    - NUT_SERIAL
+    - NUT_VENDORID
+    - NUT_DEV_PORT
+
+secrets:
+  - name: influxdb3_auth_token
+    required: false
+  - name: grafana_admin_password
+    required: true
+  - name: grafana_secret_key
+    required: true
+  - name: grafana_oauth_client_id
+    required: true
+  - name: grafana_oauth_client_secret
+    required: true
+  - name: grafana_psql_password
+    required: true
+  - name: nut_upsd_password
+    required: false
+
+health:
+  - service: grafana
+    path: /api/health
+    port: 3000
+  - service: prometheus
+    path: /-/healthy
+    port: 9090
+  - service: loki
+    path: /ready
+    port: 3100
