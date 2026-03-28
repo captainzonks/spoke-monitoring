@@ -1,0 +1,25 @@
+# ==============================================================================
+# MIDDLEWARES_MONITORING - TRAEFIK MONITORING MIDDLEWARE
+# ==============================================================================
+# Description: Module-specific middleware for monitoring services
+# Author: Matt Barham
+# Created: 2026-03-28
+# Version: 1.0.0
+# ==============================================================================
+# Deployed by Spoke as: mod_monitoring_middlewares_monitoring.yml
+# Dependencies:
+#   - hub middlewares (middleware chains)
+# ==============================================================================
+
+http:
+  middlewares:
+    #======================================================
+    #==================== LOKI ===========================
+    #======================================================
+
+    # Deny-all middleware to block Loki write endpoints (push/raw)
+    # ipAllowList with 0.0.0.0/32 matches no source IPs → returns 403
+    loki-write-block:
+      ipAllowList:
+        sourceRange:
+          - "0.0.0.0/32"
