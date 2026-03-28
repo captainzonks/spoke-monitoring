@@ -72,6 +72,24 @@ http:
       service: prometheus-svc@file
 
     #======================================================
+    #==================== LOKI ===========================
+    #======================================================
+
+    loki-block-write:
+      rule: Host(`loki.{{ env "DOMAIN" }}`) && (PathPrefix(`/loki/api/v1/push`) || PathPrefix(`/loki/api/v1/raw`))
+      entryPoints: "websecure"
+      priority: 500
+      middlewares: loki-write-block@file
+      service: loki-svc@file
+
+    loki:
+      rule: Host(`loki.{{ env "DOMAIN" }}`)
+      entryPoints: "websecure"
+      priority: 100
+      middlewares: chain-agent-api@file
+      service: loki-svc@file
+
+    #======================================================
     #==================== DOZZLE =========================
     #======================================================
 
