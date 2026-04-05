@@ -152,7 +152,7 @@ services:
     image: ${PROMETHEUS_IMAGE}
     build:
       context: ./dockerfiles/prometheus/
-      dockerfile: ./dockerfiles/prometheus/Dockerfile
+      dockerfile: Dockerfile
       args:
         BUILD_DATE: ${BUILD_DATE}
         CT_TAG: ${PROMETHEUS_TAG}
@@ -276,7 +276,7 @@ services:
     image: ${TELEGRAF_IMAGE}
     build:
       context: ./dockerfiles/telegraf/
-      dockerfile: ./dockerfiles/telegraf/Dockerfile
+      dockerfile: Dockerfile
       args:
         BUILD_DATE: ${BUILD_DATE}
         CT_TAG: ${TELEGRAF_TAG}
