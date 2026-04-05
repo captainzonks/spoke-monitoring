@@ -9,7 +9,7 @@ Monitoring and observability module for [Spoke](https://github.com/captainzonks/
 | Grafana | Visualization and dashboards | 3000 |
 | Prometheus | Metrics collection and storage | 9090 |
 | Loki | Log aggregation (monolithic mode) | 3100 |
-| Telegraf | Metrics agent (host + Docker) | 8094/9273 |
+| Telegraf | Metrics agent (host) | 8094/9273 |
 | Dozzle (socket) | Docker log viewer agent | 8080 |
 | Dozzle (soxy) | Docker log viewer web UI | 8080 |
 | Alloy | Grafana log/metrics collector | 12345 |
