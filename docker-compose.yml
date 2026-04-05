@@ -329,7 +329,6 @@ services:
 
     volumes:
       - ${APPDATA_DIR}/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /sys:/hostfs/sys:ro
       - /proc:/hostfs/proc:ro
       - /etc:/hostfs/etc:ro
