@@ -1,11 +1,15 @@
 # ==============================================================================
-# ROUTERS_MONITORING - TRAEFIK MONITORING ROUTING
+# MONITORING MODULE - TRAEFIK ROUTERS
 # ==============================================================================
 # Description: HTTP routing rules for monitoring and observability services
 # Author: Matt Barham
 # Created: 2026-02-12
-# Version: 1.0.0
+# Modified: 2026-04-21
+# Version: 1.0.1
+# Host: Your Server
 # ==============================================================================
+# Type: Traefik Dynamic Config (routers)
+# Component: module: monitoring
 # Deployed by Spoke as: mod_monitoring_routers_monitoring.yml
 # Dependencies:
 #   - mod_monitoring_services_monitoring.yml (service definitions)

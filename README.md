@@ -1,5 +1,21 @@
 # spoke-monitoring
 
+<!--
+==============================================================================
+README.md - spoke-monitoring module documentation
+==============================================================================
+Description: Monitoring and observability module for Spoke
+Author: Matt Barham
+Created: 2026-02-12
+Modified: 2026-04-21
+Version: 1.0.1
+==============================================================================
+Document Type: Reference
+Audience: Developer
+Status: Final
+==============================================================================
+-->
+
 Monitoring and observability module for [Spoke](https://github.com/captainzonks/spoke).
 
 ## Services

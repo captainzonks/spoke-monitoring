@@ -1,6 +1,20 @@
+# ==============================================================================
+# MONITORING MODULE - STACK MANIFEST
+# ==============================================================================
+# Description: Spoke module manifest - declares requirements, env, secrets, health
+# Author: Matt Barham
+# Created: 2026-02-12
+# Modified: 2026-04-21
+# Version: 1.0.1
+# Host: Your Server
+# ==============================================================================
+# Type: Spoke Module Manifest
+# Component: module: monitoring
+# ==============================================================================
+
 module:
   name: monitoring
-  version: 1.0.0
+  version: 1.0.1
   description: "Monitoring and observability stack - metrics, logs, visualization"
   author: "Matt Barham"
   license: MIT
