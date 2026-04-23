@@ -1,11 +1,15 @@
 # ==============================================================================
-# SERVICES_MONITORING - TRAEFIK MONITORING SERVICES
+# MONITORING MODULE - TRAEFIK SERVICES
 # ==============================================================================
 # Description: Load balancer service configurations for monitoring services
 # Author: Matt Barham
 # Created: 2026-02-12
-# Version: 1.0.0
+# Modified: 2026-04-21
+# Version: 1.0.1
+# Host: Your Server
 # ==============================================================================
+# Type: Traefik Dynamic Config (services)
+# Component: module: monitoring
 # Deployed by Spoke as: mod_monitoring_services_monitoring.yml
 # Dependencies:
 #   - Container services must be running and accessible

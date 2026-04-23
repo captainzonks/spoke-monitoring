@@ -1,11 +1,15 @@
 # ==============================================================================
-# MIDDLEWARES_MONITORING - TRAEFIK MONITORING MIDDLEWARE
+# MONITORING MODULE - TRAEFIK MIDDLEWARES
 # ==============================================================================
 # Description: Module-specific middleware for monitoring services
 # Author: Matt Barham
 # Created: 2026-03-28
-# Version: 1.0.0
+# Modified: 2026-04-21
+# Version: 1.0.1
+# Host: Your Server
 # ==============================================================================
+# Type: Traefik Dynamic Config (middlewares)
+# Component: module: monitoring
 # Deployed by Spoke as: mod_monitoring_middlewares_monitoring.yml
 # Dependencies:
 #   - hub middlewares (middleware chains)

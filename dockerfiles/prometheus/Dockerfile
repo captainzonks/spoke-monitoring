@@ -1,11 +1,17 @@
 # ==============================================================================
-# DOCKERFILE - Prometheus with Custom User
+# MONITORING MODULE - PROMETHEUS DOCKERFILE
 # ==============================================================================
-# Description: Prometheus with custom UID/GID for host permissions
+# Description: Prometheus with custom UID/GID for host filesystem permissions
 # Author: Matt Barham
 # Created: 2026-02-12
-# Version: 1.0.0
+# Modified: 2026-04-21
+# Version: 1.0.1
+# Host: Your Server
 # ==============================================================================
+# Type: Dockerfile
+# Base Image: prom/prometheus:${CT_TAG}
+# Documentation: https://prometheus.io/docs/
+# Component: module: monitoring / service: prometheus
 # Build args: USER_ID, GROUP_ID, USERNAME, GROUPNAME, CT_TAG
 # Security: custom user mapping for host filesystem permissions
 # ==============================================================================

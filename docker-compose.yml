@@ -1,14 +1,40 @@
 # ==============================================================================
-# SPOKE MONITORING MODULE - DOCKER COMPOSE
+# MONITORING MODULE - DOCKER COMPOSE
 # ==============================================================================
-# Description: Monitoring services - metrics, logs, visualization, alerts
+# Description: Monitoring and observability services - metrics, logs, dashboards
 # Author: Matt Barham
 # Created: 2026-02-12
-# Version: 1.0.0
+# Modified: 2026-04-21
+# Version: 1.0.1
+# Host: Your Server
 # ==============================================================================
-# Services: grafana, prometheus, loki, telegraf, dozzle-socket, dozzle-soxy,
-#           alloy, nut-upsd
-# Networks: troxy, soxy, auxy (external, created by hub)
+# Component: module: monitoring
+# Config Sources: base.env + .env.example + modules.yml overrides → .env (generated)
+# Security: UPS password + Grafana admin/OAuth secrets; custom Prometheus/Telegraf
+#           builds for UID/GID mapping; InfluxDB3 token loaded via entrypoint
+# ==============================================================================
+# Container Images:
+#   See modules/monitoring/.env.example for complete image paths and versions
+#   (GRAFANA_IMAGE, PROMETHEUS_IMAGE, LOKI_IMAGE, TELEGRAF_IMAGE, DOZZLE_IMAGE,
+#    ALLOY_IMAGE, NUT_UPSD_IMAGE, GLANCES_IMAGE)
+# Documentation:
+#   - Grafana: https://grafana.com/docs/grafana/latest/
+#   - Prometheus: https://prometheus.io/docs/
+#   - Loki: https://grafana.com/docs/loki/latest/
+#   - Telegraf: https://docs.influxdata.com/telegraf/
+#   - Dozzle: https://dozzle.dev/
+#   - Alloy: https://grafana.com/docs/alloy/latest/
+#   - NUT: https://networkupstools.org/
+# Networks:
+#   - troxy (192.168.35.0/24) - main application network
+#   - soxy (192.168.33.0/24) - socket-proxy network
+#   - auxy (192.168.34.0/24) - auth network
+# Dependencies:
+#   - Hub: traefik, postgres-hub, socket-proxy
+#   - Module: database (InfluxDB3 for Telegraf output)
+# External Integrations:
+#   - [x] Traefik routing
+#   - [x] Authentik forward auth
 # ==============================================================================
 
 name: spoke-monitoring

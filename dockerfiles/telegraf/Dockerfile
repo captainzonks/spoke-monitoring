@@ -1,11 +1,17 @@
 # ==============================================================================
-# DOCKERFILE - Telegraf with Custom User and Secrets Support
+# MONITORING MODULE - TELEGRAF DOCKERFILE
 # ==============================================================================
 # Description: Telegraf with custom user and Docker secrets handling
 # Author: Matt Barham
 # Created: 2026-02-12
-# Version: 1.0.0
+# Modified: 2026-04-21
+# Version: 1.0.1
+# Host: Your Server
 # ==============================================================================
+# Type: Dockerfile
+# Base Image: telegraf:${CT_TAG}
+# Documentation: https://docs.influxdata.com/telegraf/
+# Component: module: monitoring / service: telegraf
 # Build args: USER_ID, GROUP_ID, USERNAME, GROUPNAME, OG_UID, OG_GID, CT_TAG
 # Security: custom user mapping, Docker secrets support via entrypoint
 # ==============================================================================
