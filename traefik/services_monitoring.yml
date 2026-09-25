@@ -4,8 +4,8 @@
 # Description: Load balancer service configurations for monitoring services
 # Author: Matt Barham
 # Created: 2026-02-12
-# Modified: 2026-04-21
-# Version: 1.0.1
+# Modified: 2026-09-25
+# Version: 1.0.2
 # Host: Your Server
 # ==============================================================================
 # Type: Traefik Dynamic Config (services)
@@ -41,15 +41,6 @@ http:
       loadBalancer:
         servers:
           - url: http://prometheus:9090
-
-    #======================================================
-    #==================== LOKI ===========================
-    #======================================================
-
-    loki-svc:
-      loadBalancer:
-        servers:
-          - url: http://loki:3100
 
     #======================================================
     #==================== DOZZLE =========================

@@ -4,8 +4,8 @@
 # Description: HTTP routing rules for monitoring and observability services
 # Author: Matt Barham
 # Created: 2026-02-12
-# Modified: 2026-04-21
-# Version: 1.0.1
+# Modified: 2026-09-25
+# Version: 1.0.2
 # Host: Your Server
 # ==============================================================================
 # Type: Traefik Dynamic Config (routers)
@@ -74,24 +74,6 @@ http:
       priority: 300
       middlewares: chain-monitoring@file
       service: prometheus-svc@file
-
-    #======================================================
-    #==================== LOKI ===========================
-    #======================================================
-
-    loki-block-write:
-      rule: Host(`loki.{{ env "DOMAIN" }}`) && (PathPrefix(`/loki/api/v1/push`) || PathPrefix(`/loki/api/v1/raw`))
-      entryPoints: "websecure"
-      priority: 500
-      middlewares: loki-write-block@file
-      service: loki-svc@file
-
-    loki:
-      rule: Host(`loki.{{ env "DOMAIN" }}`)
-      entryPoints: "websecure"
-      priority: 100
-      middlewares: chain-agent-api@file
-      service: loki-svc@file
 
     #======================================================
     #==================== DOZZLE =========================
