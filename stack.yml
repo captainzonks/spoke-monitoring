@@ -14,7 +14,7 @@
 
 module:
   name: monitoring
-  version: 1.0.1
+  version: "1.0.1"
   description: "Monitoring and observability stack - metrics, logs, visualization"
   author: "Matt Barham"
   license: MIT
