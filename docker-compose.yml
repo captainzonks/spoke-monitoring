@@ -4,8 +4,8 @@
 # Description: Monitoring and observability services - metrics, logs, dashboards
 # Author: Matt Barham
 # Created: 2026-02-12
-# Modified: 2026-09-26
-# Version: 1.0.2
+# Modified: 2026-10-02
+# Version: 1.0.3
 # Host: Your Server
 # ==============================================================================
 # Component: module: monitoring
@@ -429,6 +429,7 @@ services:
     container_name: dozzle-soxy
     restart: on-failure
     init: true
+    user: ${PUID}:${DGID}
 
     security_opt:
       - no-new-privileges=true
@@ -464,6 +465,9 @@ services:
 
     volumes:
       - ${LOCALTIME}:/etc/localtime:ro
+      # Per-user UI settings (profiles). The root filesystem is read-only, so
+      # without this mount Dozzle fails with "mkdir /data/...: read-only".
+      - ${APPDATA_DIR}/dozzle/data/:/data/:rw
 
     tmpfs:
       - /tmp/:rw,size=50m
