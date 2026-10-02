@@ -4,8 +4,8 @@
 # Description: Telegraf with custom user and Docker secrets handling
 # Author: Matt Barham
 # Created: 2026-02-12
-# Modified: 2026-04-23
-# Version: 1.0.1
+# Modified: 2026-10-02
+# Version: 1.0.2
 # Host: Your Server
 # ==============================================================================
 # Type: Dockerfile
@@ -16,7 +16,7 @@
 # Security: custom user mapping, Docker secrets support via entrypoint
 # ==============================================================================
 
-ARG CT_TAG=1.38.3
+ARG CT_TAG=1.40.1
 FROM telegraf:${CT_TAG}
 
 ARG USER_ID

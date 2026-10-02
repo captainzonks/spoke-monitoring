@@ -4,8 +4,8 @@
 # Description: Prometheus with custom UID/GID for host filesystem permissions
 # Author: Matt Barham
 # Created: 2026-02-12
-# Modified: 2026-04-23
-# Version: 1.0.1
+# Modified: 2026-10-02
+# Version: 1.0.2
 # Host: Your Server
 # ==============================================================================
 # Type: Dockerfile
@@ -16,7 +16,7 @@
 # Security: custom user mapping for host filesystem permissions
 # ==============================================================================
 
-ARG CT_TAG=v3.11.2
+ARG CT_TAG=v3.15.0
 FROM prom/prometheus:${CT_TAG}
 
 ARG USER_ID
