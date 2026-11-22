@@ -16,7 +16,7 @@
 # Security: custom user mapping for host filesystem permissions
 # ==============================================================================
 
-ARG CT_TAG=v3.15.0
+ARG CT_TAG=v3.16.0
 FROM prom/prometheus:${CT_TAG}
 
 ARG USER_ID

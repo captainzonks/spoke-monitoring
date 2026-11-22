@@ -16,7 +16,7 @@
 # Security: custom user mapping, Docker secrets support via entrypoint
 # ==============================================================================
 
-ARG CT_TAG=1.40.2
+ARG CT_TAG=1.40.3
 FROM telegraf:${CT_TAG}
 
 ARG USER_ID
